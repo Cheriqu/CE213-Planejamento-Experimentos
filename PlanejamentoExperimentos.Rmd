@@ -1,0 +1,345 @@
+---
+lang: "pt-br"
+output:
+  pdf_document:
+    extra_dependencies: ["float"]
+---
+
+\begin{titlepage}
+\centering
+\includegraphics[width=3cm]{logo.jpg}
+\vfill
+{\Huge Planejamento de Experimentos \par}
+{\huge Efeito da quantidade de sal no cozimento de batata \par}
+\vspace{1cm}
+{\Large Luiz Francisco - 20213026 \par}
+{\Large Mateus Souza - 20207154 \par}
+\vfill
+{\large junho/2023 \par}
+\end{titlepage}
+
+
+
+# Introdução
+
+Realizamos um experimento para investigar o efeito da quantidade de sal no cozimento de batatas. Foram coletadas medidas da perfuração de uma faca, aplicado uma igual pressão a cada uma dessas batatas, todas cortadas em um formato cúbico e pesando 50 gramas. Foram realizadas 3 medições de forma a representar os três eixos espaciais (X, Y e Z). Cabe ressaltar que foram pseudo-repetições, dado que cada tratamento foi aplicado a três batatas de cada vez.
+
+Os dados foram organizados em uma matriz, onde cada linha representa uma medição e as colunas registram o Tratamento, a Orientação medida, a Ordem da repetição e Cm, o centímetro medido. Os dados podem ser visualizados abaixo:
+
+
+```{r, echo=FALSE}
+dados <- matrix(c(1.4, 1.6, 2.5, 1.3, 1.6, 1.4, 2.0, 1.8, 2.1,
+                  1.7, 1.6, 1.6, 1.8, 1.9, 1.9, 1.5, 1.8, 2.0,
+                  2.2, 2.0, 2.5, 2.0, 2.1, 2.4, 2.9, 2.5, 2.9,
+                  2.0, 2.3, 2.7, 2.7, 3.0, 3.0, 1.8, 2.0, 2.0,
+                  1.8, 1.9, 2.0, 3.0, 4.2, 3.0, 3.1, 4.1, 3.1), 
+                nrow = 5, ncol = 9, byrow = TRUE)
+colnames(dados) <- c("X1", "Y1", "Z1", "X2", "Y2", "Z2", "X3", "Y3", "Z3")
+rownames(dados) <- c("0 ml", "10 ml", "25 ml", "50 ml", "100 ml")
+
+df <- read.csv("dados.csv", sep =";",header = TRUE, dec=",")
+head(df)
+```
+
+## Correlação entre os tratamentos
+
+Realizamos uma análise de correlação entre os diferentes tratamentos de acordo com as quantidades de sal adicionadas. O gráfico a seguir apresenta as correlações entre os tratamentos, representadas por elipses.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(corrplot)
+cor_matrix <- cor(t(dados))
+corrplot.mixed(cor_matrix, upper = "ellipse",  number.cex = 1.2)
+```
+
+## Medidas por tratamento
+
+O gráfico abaixo mostra as medidas obtidas para cada tratamento ao longo das diferentes observações. Cada linha representa um tratamento, e as colunas representam as observações. As diferente linhas diferenciam os tratamentos.
+
+```{r, echo=FALSE}
+matplot(t(dados),
+        type = "l",
+        xlab = "Observações",
+        ylab = "Medidas",
+        main = "Medidas por Tratamento",
+        col = 1:3,
+        lty = 1:3)
+legend("topright",
+       legend = c("0 ml", "10 ml", "25 ml", "50 ml", "100 ml"),
+       col = 1:3,
+       lty = 1:3,
+       bty = "n")
+```
+
+## Média das medidas para cada tratamento
+
+A média das medidas obtidas para cada tratamento é apresentada no gráfico de barras a seguir. Os tratamentos estão representados no eixo x, enquanto a média das medidas está no eixo y.
+
+```{r, echo=FALSE}
+medias_tratamentos <- rowMeans(dados)
+# Gráfico de barras - Média das medidas
+barplot(medias_tratamentos, 
+        names.arg = c("0 ml", "10 ml", "25 ml", "50 ml", "100 ml"),
+        xlab = "Tratamentos",
+        ylab = "Média das Medidas",
+        main = "Média das Medidas por Tratamento")
+```
+
+## Gráfico de dispersão para cada tratamento
+
+Os gráficos de dispersão a seguir representam as medidas obtidas para cada tratamento. Cada tratamento é representado por um ícone diferente. Os eixos x e y representam, respectivamente, os tratamentos e as medidas. Cada gráfico de dispersão corresponde a um tratamento específico.
+
+```{r, echo=FALSE, fig.align='center', fig.width=6, fig.height=6}
+tratamentos <- c("0ml", "10ml", "25ml", "50ml", "100ml")
+icons <- c(15, 16, 17, 18, 19)  # Different icons for each treatment
+
+par(mfrow = c(2, 3))  # Dividing the plotting area into 2 rows and 3 columns
+
+# Find the common y-axis limits for all graphs
+y_min <- min(dados)
+y_max <- max(dados)
+
+for (i in 1:ncol(dados)) {
+  plot(1:length(tratamentos), dados[, i],
+       main = colnames(dados)[i],
+       xlab = "Tratamentos",
+       ylab = "Medidas",
+       pch = icons,
+       col = "steelblue",
+       axes = FALSE,
+       type = "n",
+       ylim = c(y_min, y_max))  # Set common y-axis limits
+  
+  for (j in 1:length(tratamentos)) {
+    points(j, dados[j, i], pch = icons[j], col = "steelblue")
+  }
+  
+  axis(1, at = 1:length(tratamentos), labels = tratamentos)
+  axis(2, ylim = c(y_min, y_max))
+}
+
+```
+
+## Teste de hipótese para os diferentes Tratamentos 
+
+
+```{r, echo=FALSE, results=FALSE}
+dados_df <- as.data.frame(dados)
+trat_0 <- dados_df["0 ml", ]
+trat_10 <- dados_df["10 ml", ]
+trat_25 <- dados_df["25 ml", ]
+trat_50 <- dados_df["50 ml", ]
+trat_100 <- dados_df["100 ml", ]
+
+t0_t10 <- t.test(trat_0, trat_10)
+t0_t25 <- t.test(trat_0, trat_25)
+t0_t50 <- t.test(trat_0, trat_50)
+t0_t100 <- t.test(trat_0, trat_100)
+t10_t25 <- t.test(trat_10, trat_25)
+t10_t50 <- t.test(trat_10, trat_50)
+t10_t100 <- t.test(trat_10, trat_100)
+t25_t50 <- t.test(trat_25, trat_50)
+t25_t100 <- t.test(trat_25, trat_100)
+t50_t100 <- t.test(trat_50, trat_100)
+
+cat("H0: Não há diferença significativa entre as médias dos tratamentos sendo comparados")
+
+est_t0_t10 <- t0_t10$statistic
+p_t0_t10 <- t0_t10$p.value
+cat("Tratamento 0ml VS 10ml:\nTeste t:", est_t0_t10, "\nValor-p :", p_t0_t10)
+if (p_t0_t10 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+est_t0_t25 <- t0_t25$statistic
+p_t0_t25 <- t0_t25$p.value
+cat("Tratamento 0ml VS 25ml:\nTeste t:", est_t0_t25, "\nValor-p :", p_t0_t25)
+if (p_t0_t25 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+est_t0_t50 <- t0_t50$statistic
+p_t0_t50 <- t0_t50$p.value
+cat("Tratamento 0ml VS 50ml:\nTeste t:", est_t0_t50, "\nValor-p :", p_t0_t50)
+if (p_t0_t50 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+est_t0_t100 <- t0_t100$statistic
+p_t0_t100 <- t0_t100$p.value
+cat("Tratamento 0ml VS 100ml:\nTeste t:", est_t0_t100, "\nValor-p :", p_t0_t100)
+if (p_t0_t100 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+est_t10_t25 <- t10_t25$statistic
+p_t10_t25 <- t10_t25$p.value
+cat("Tratamento 10ml VS 25ml:\nTeste t:", est_t10_t25, "\nValor-p :", p_t10_t25)
+if (p_t10_t25 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+est_t10_t50 <- t10_t50$statistic
+p_t10_t50 <- t10_t50$p.value
+cat("\nTratamento 10ml VS 50ml:\nTeste t:", est_t10_t50, "\nValor-p :", p_t10_t50)
+if (p_t10_t50 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+est_t10_t100 <- t10_t100$statistic
+p_t10_t100 <- t10_t100$p.value
+cat("Tratamento 10ml VS 100ml:\nTeste t:", est_t10_t100, "\nValor-p :", p_t10_t100)
+if (p_t10_t100 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+est_t25_t50 <- t25_t50$statistic
+p_t25_t50 <- t25_t50$p.value
+cat("Tratamento 25ml VS 50ml:\nTeste t:", est_t25_t50, "\nValor-p :", p_t25_t50)
+if (p_t25_t50 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+est_t25_t100 <- t25_t100$statistic
+p_t25_t100 <- t25_t100$p.value
+cat("Tratamento 25ml VS 100ml:\nTeste t:", est_t25_t100, "\nValor-p :", p_t25_t100)
+if (p_t25_t100 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+est_t50_t100 <- t50_t100$statistic
+p_t50_t100 <- t50_t100$p.value
+cat("Tratamento 50ml VS 100ml:\nTeste t:", est_t50_t100, "\nValor-p :", p_t50_t100)
+if (p_t50_t100 < 0.05) {
+  cat("Rejeita-se a hipótese nula\n")
+} else {
+  cat("Não se rejeita a hipótese nula\n")
+}
+
+```
+
+
+Abaixo pode se visualizar os testes de hipótese de comparação de médias para os diferente tratamentos.
+
+```{r, echo=FALSE}
+matriz <- matrix(NA, nrow = 5, ncol = 5, dimnames = list(c("0ml", "10ml", "25ml", "50ml", "100ml"), c("0ml", "10ml", "25ml", "50ml", "100ml")))
+
+matriz["0ml", "10ml"] <- "Não Rejeita-se"
+matriz["0ml", "25ml"] <- "Rejeita-se"
+matriz["0ml", "50ml"] <- "Rejeita-se"
+matriz["0ml", "100ml"] <- "Rejeita-se"
+
+matriz["10ml", "25ml"] <- "Rejeita-se"
+matriz["10ml", "50ml"] <- "Rejeita-se"
+matriz["10ml", "100ml"] <- "Rejeita-se"
+
+matriz["25ml", "50ml"] <- "Não Rejeita-se"
+matriz["25ml", "100ml"] <- "Não Rejeita-se"
+
+matriz["50ml", "100ml"] <- "Não Rejeita-se"
+
+cat("H0: Não há diferença significativa entre as médias dos tratamentos sendo comparados")
+print(matriz)
+
+```
+
+```{r, echo=FALSE}
+library(tidyverse)
+df <- read.csv("dados.csv", sep =";",header = TRUE, dec=".")
+
+df <- df %>%
+    dplyr::mutate(Tratamento = factor(Tratamento),
+                  Ordem = factor(Ordem),
+                  Orientacao = factor(Orientacao),
+                  Cm = Cm)
+
+
+m0 <- lm(Cm ~ Ordem + Tratamento + Orientacao, data=df)
+ggplot(df, aes(x = Tratamento, y = Cm, color = Ordem)) +
+    geom_point() +
+    # stat_summary(geom = "line", fun = "mean") +
+    geom_smooth(method =  "lm", formula = y ~ x + I(x^2))
+
+
+coef(m0)
+
+# Houve afastamento dos pressupostos?
+par(mfrow = c(2, 2))
+plot(m0)
+layout(1)
+
+# shapiro.test(residuals(m0))
+# shapiro.test(residuals(m0)[-c(18, 29)])
+
+anova(m0)
+summary(m0)
+
+tb_means <- emmeans::emmeans(m0, spec = ~Ordem * Tratamento * Orientacao) |>
+    as.data.frame()
+
+ggplot(data = tb_means,
+       mapping = aes(x = Tratamento, y = tb_means)) +
+    geom_point() +
+    geom_errorbar(mapping = aes(ymin = lower.CL, ymax = upper.CL),
+                  width = 0.05)
+
+
+m1 <- lm(Cm ~ Tratamento, data=df)
+
+coef(m1)
+
+# Houve afastamento dos pressupostos?
+par(mfrow = c(2, 2))
+plot(m1)
+layout(1)
+
+# shapiro.test(residuals(m0))
+# shapiro.test(residuals(m0)[-c(18, 29)])
+
+anova(m1)
+
+tb_means <- emmeans::emmeans(m1,
+                             spec = ~Tratamento) |>
+    as.data.frame()
+tb_means
+
+
+ggplot(data = tb_means,
+       mapping = aes(x = Tratamento, y = emmean)) +
+    # geom_point() +
+    # geom_errorbar(mapping = aes(ymin = lower.CL, ymax = upper.CL),
+    #               width = 0.05)
+    geom_ribbon(mapping = aes(ymin = lower.CL, ymax = upper.CL),
+                width = 0.05, fill = "red", alpha = 0.4) +
+    geom_line() +
+    geom_point(data = df,
+               aes(x = Tratamento, y = ))
+
+summary(m1)
+
+emm <- emmeans::emmeans(m1, spec = ~Tratamento)
+emm
+
+emm@linfct
+
+coef(m1)
+
+
+```
